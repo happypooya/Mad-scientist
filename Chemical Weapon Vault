@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Portrait Vault - Mystery Puzzle Game</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Plus+Jakarta+Sans:wght@400;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --gold-primary: #d4af37;
+            --gold-light: #f3e5ab;
+            --gold-dark: #aa7c11;
+            --wood-dark: #1f140e;
+            --wallpaper-bg: #140d12;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--wallpaper-bg);
+            color: #e2e8f0;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+
+        .font-clue {
+            font-family: 'Special Elite', cursive;
+        }
+
+        /* Victorian Wallpaper Pattern */
+        .museum-wall {
+            background-color: #1a0f16;
+            background-image: 
+                radial-gradient(circle at 50% 30%, rgba(212, 175, 55, 0.15) 0%, transparent 60%),
+                radial-gradient(circle at 20% 80%, rgba(139, 0, 0, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 0, 0, 0.2) 0%, transparent 50%),
+                repeating-linear-gradient(45deg, rgba(30, 15, 25, 0.5) 0px, rgba(30, 15, 25, 0.5) 20px, rgba(10, 5, 10, 0.5) 20px, rgba(10, 5, 10, 0.5) 40px);
+            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9);
+        }
+
+        /* Gold Frame Styling */
+        .picture-frame {
+            position: relative;
+            background: linear-gradient(135deg, #f5d77f 0%, #b8860b 25%, #ffd700 50%, #8b6508 75%, #d4af37 100%);
+            border-radius: 10px;
+            padding: 6px;
+            box-shadow: 
+                0 10px 20px rgba(0, 0, 0, 0.8),
+                0 0 10px rgba(212, 175, 55, 0.2),
+                inset 0 0 6px rgba(0, 0, 0, 0.8);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer;
+        }
+
+        .picture-frame:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 
+                0 15px 30px rgba(0, 0, 0, 0.9),
+                0 0 20px rgba(243, 229, 171, 0.4);
+        }
+
+        .picture-frame.in-slot {
+            opacity: 0.35;
+            filter: grayscale(0.6);
+            transform: scale(0.95);
+        }
+
+        .inner-canvas {
+            background: radial-gradient(circle, #3a2b37 0%, #170d19 100%);
+            border: 2px solid #2a1a08;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
+        }
+
+        /* Slot Drop Area Styling */
+        .pedestal-slot {
+            background: rgba(15, 10, 20, 0.85);
+            border: 2px dashed #b8860b;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.8);
+        }
+
+        /* Wall Opening Mechanism Animations */
+        .wall-panel {
+            transition: transform 2.2s cubic-bezier(0.77, 0, 0.175, 1);
+            will-change: transform;
+        }
+
+        .wall-left.open {
+            transform: translateY(-120%);
+        }
+
+        /* Vault Door Glow Effects */
+        @keyframes vaultGlow {
+            0%, 100% { filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.3)); }
+            50% { filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.7)); }
+        }
+
+        .vault-door-container {
+            animation: vaultGlow 3s infinite ease-in-out;
+        }
+
+        /* Torch Flicker */
+        @keyframes torchLight {
+            0%, 100% { opacity: 0.85; transform: scale(1); }
+            25% { opacity: 1; transform: scale(1.03); }
+            50% { opacity: 0.75; transform: scale(0.97); }
+            75% { opacity: 0.95; transform: scale(1.02); }
+        }
+
+        .light-glow {
+            animation: torchLight 2.5s infinite ease-in-out;
+        }
+
+        /* AI Companion Pulse & Glow */
+        @keyframes aiPulse {
+            0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), 0 0 30px rgba(147, 197, 253, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.8), 0 0 45px rgba(147, 197, 253, 0.5); }
+        }
+
+        .ai-avatar-glow {
+            animation: aiPulse 3s infinite ease-in-out;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f140e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #8b6508;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative bg-black text-slate-100 select-none overflow-x-hidden">
+
+    <!-- Top Navigation Header -->
+    <header class="relative z-30 bg-stone-950/95 border-b border-amber-900/40 px-3 py-2.5 shadow-2xl backdrop-blur-md">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-9 h-9 rounded-lg bg-amber-600/20 border border-amber-500/50 flex items-center justify-center text-amber-400 text-lg shadow-inner">
+                    <i class="fa-solid fa-vault"></i>
+                </div>
+                <div>
+                    <h1 class="font-cinzel text-base sm:text-xl font-bold tracking-wider text-amber-400 drop-shadow">THE GALLERY VAULT</h1>
+                    <p class="text-[10px] sm:text-xs text-amber-200/70">Arrange 5 key figures to unlock the secret vault</p>
+                </div>
+            </div>
+
+            <!-- Header Action Controls -->
+            <div class="flex items-center space-x-1.5 sm:space-x-2">
+                <button onclick="toggleAiDrawer()" class="px-2.5 py-1.5 bg-blue-900/70 hover:bg-blue-800 text-blue-200 text-xs font-semibold rounded-lg border border-blue-500/50 transition flex items-center space-x-1.5 shadow-lg animate-pulse">
+                    <i class="fa-solid fa-robot text-blue-400"></i>
+                    <span>AI Assistant</span>
+                </button>
+                <button id="btnSoundToggle" onclick="toggleAudio()" class="px-2.5 py-1.5 bg-stone-800 hover:bg-stone-700 text-amber-300 text-xs font-semibold rounded-lg border border-amber-700/50 transition flex items-center space-x-1">
+                    <i class="fa-solid fa-volume-high" id="soundIcon"></i>
+                    <span id="soundLabel" class="hidden xs:inline">Audio</span>
+                </button>
+                <button onclick="toggleJournalModal()" class="px-2.5 py-1.5 bg-amber-900/70 hover:bg-amber-800 text-amber-200 text-xs font-semibold rounded-lg border border-amber-600/50 transition flex items-center space-x-1.5 shadow-lg">
+                    <i class="fa-solid fa-book-open text-amber-400"></i>
+                    <span>Journal</span>
+                </button>
+                <button onclick="resetPuzzle()" class="p-2 sm:px-2.5 sm:py-1.5 bg-stone-800 hover:bg-stone-700 text-slate-300 text-xs font-semibold rounded-lg border border-stone-600 transition flex items-center" title="Reset">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Interactive Stage -->
+    <main class="relative flex-1 flex flex-col items-center justify-center p-2 sm:p-4 overflow-hidden w-full max-w-6xl mx-auto">
+        <div class="relative w-full rounded-xl sm:rounded-2xl border-2 sm:border-4 border-amber-950/80 shadow-[0_20px_50px_rgba(0,0,0,0.95)] bg-stone-950 p-2 sm:p-4">
+            
+            <!-- Upper Secret Chamber / Sliding Frame Area -->
+            <div class="relative w-full overflow-hidden rounded-lg sm:rounded-xl bg-black border-2 border-amber-800/60 shadow-inner h-[280px] xs:h-[320px] sm:h-[380px] md:h-[420px] mb-3 flex items-center justify-center">
+                
+                <!-- SECRET VAULT VIDEO (Underneath Wall Panel) -->
+                <div id="vaultBackground" class="absolute inset-0 z-0 flex items-center justify-center bg-black">
+                    <video id="vaultVideo" class="w-full h-full object-cover" playsinline preload="auto">
+                        <source src="https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/VaultOpens.mp4" type="video/mp4">
+                        Your browser does not support video playback.
+                    </video>
+
+                    <!-- Vault Unlock Text Overlay -->
+                    <div id="vaultStatusMessage" class="absolute inset-x-0 bottom-4 text-center opacity-0 transition-opacity duration-1000 z-20 pointer-events-none">
+                        <span class="font-cinzel text-lg sm:text-2xl md:text-3xl font-black text-amber-400 tracking-widest bg-black/85 px-5 py-2 rounded-full border border-amber-500 shadow-2xl">
+                            VAULT UNLOCKED!
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Sliding Front Wall Panel (Portraits Grid) -->
+                <div id="wallLeft" class="wall-panel wall-left absolute inset-0 z-10 museum-wall p-2.5 sm:p-4 flex flex-col justify-between overflow-y-auto">
+                    <!-- Ambient Wall Torch Lights -->
+                    <div class="absolute top-2 left-4 w-10 h-10 rounded-full bg-amber-500/20 blur-xl light-glow pointer-events-none"></div>
+                    <div class="absolute top-2 right-4 w-10 h-10 rounded-full bg-amber-500/20 blur-xl light-glow pointer-events-none"></div>
+
+                    <!-- Wall Header Banner -->
+                    <div class="text-center mb-1">
+                        <span class="inline-block font-cinzel text-[10px] sm:text-xs uppercase tracking-[0.2em] text-amber-300/80 border-b border-amber-500/30 pb-0.5">
+                            The Great Gallery of Luminaries
+                        </span>
+                        <h2 class="font-cinzel text-xs sm:text-base md:text-lg font-bold text-amber-100 mt-0.5 drop-shadow">
+                            Select 5 Correct Busts in Sequence
+                        </h2>
+                    </div>
+
+                    <!-- Grid of 17 Portrait Bust Frames -->
+                    <div id="portraitsGrid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-9 gap-1.5 sm:gap-2.5 justify-items-center overflow-y-auto p-1 max-h-[72%]">
+                        <!-- Portrait Items injected dynamically -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Bottom Sequence Pedestal Receiver -->
+            <div class="bg-stone-950/95 rounded-lg sm:rounded-xl p-2.5 sm:p-3.5 border border-amber-800/50 shadow-2xl backdrop-blur-md">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-2.5">
+                    
+                    <div class="text-center md:text-left">
+                        <h3 class="font-cinzel text-xs sm:text-sm font-bold text-amber-400 flex items-center justify-center md:justify-start gap-1.5">
+                            <i class="fa-solid fa-key"></i> Sequence Pedestal (5 Required)
+                        </h3>
+                        <p class="text-[10px] text-slate-400">Tap portraits to fill slots in order</p>
+                    </div>
+
+                    <!-- 5 Target Sequence Slots -->
+                    <div class="flex items-center justify-center gap-1.5 sm:gap-2 my-1 w-full md:w-auto overflow-x-auto py-1">
+                        <div class="pedestal-slot w-12 h-16 sm:w-16 sm:h-22 md:w-20 md:h-26 flex-shrink-0 flex flex-col items-center justify-center relative cursor-pointer" data-slot="0" onclick="handleSlotClick(0)">
+                            <span class="text-[8px] text-amber-500/70 font-mono absolute top-0.5 left-1">#1</span>
+                            <div class="slot-content w-full h-full flex items-center justify-center p-0.5"></div>
+                        </div>
+                        <div class="pedestal-slot w-12 h-16 sm:w-16 sm:h-22 md:w-20 md:h-26 flex-shrink-0 flex flex-col items-center justify-center relative cursor-pointer" data-slot="1" onclick="handleSlotClick(1)">
+                            <span class="text-[8px] text-amber-500/70 font-mono absolute top-0.5 left-1">#2</span>
+                            <div class="slot-content w-full h-full flex items-center justify-center p-0.5"></div>
+                        </div>
+                        <div class="pedestal-slot w-12 h-16 sm:w-16 sm:h-22 md:w-20 md:h-26 flex-shrink-0 flex flex-col items-center justify-center relative cursor-pointer" data-slot="2" onclick="handleSlotClick(2)">
+                            <span class="text-[8px] text-amber-500/70 font-mono absolute top-0.5 left-1">#3</span>
+                            <div class="slot-content w-full h-full flex items-center justify-center p-0.5"></div>
+                        </div>
+                        <div class="pedestal-slot w-12 h-16 sm:w-16 sm:h-22 md:w-20 md:h-26 flex-shrink-0 flex flex-col items-center justify-center relative cursor-pointer" data-slot="3" onclick="handleSlotClick(3)">
+                            <span class="text-[8px] text-amber-500/70 font-mono absolute top-0.5 left-1">#4</span>
+                            <div class="slot-content w-full h-full flex items-center justify-center p-0.5"></div>
+                        </div>
+                        <div class="pedestal-slot w-12 h-16 sm:w-16 sm:h-22 md:w-20 md:h-26 flex-shrink-0 flex flex-col items-center justify-center relative cursor-pointer" data-slot="4" onclick="handleSlotClick(4)">
+                            <span class="text-[8px] text-amber-500/70 font-mono absolute top-0.5 left-1">#5</span>
+                            <div class="slot-content w-full h-full flex items-center justify-center p-0.5"></div>
+                        </div>
+                    </div>
+
+                    <!-- Action Control Buttons -->
+                    <div class="flex items-center gap-2">
+                        <button onclick="clearSequence()" class="px-2.5 py-2 bg-stone-800 hover:bg-stone-700 text-xs text-rose-300 rounded-lg border border-rose-900/40 transition">
+                            <i class="fa-solid fa-trash-can mr-1"></i> Clear
+                        </button>
+                        <button id="btnUnlock" onclick="verifySequence()" class="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-bold text-xs sm:text-sm rounded-lg shadow-lg shadow-amber-600/30 transition transform active:scale-95 flex items-center gap-1.5">
+                            <i class="fa-solid fa-lock-open"></i> Unlock
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- AI Curator Drawer Modal -->
+    <div id="aiDrawerModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 p-2 sm:p-4">
+        <div class="bg-slate-900 border-2 border-blue-500/70 rounded-t-2xl sm:rounded-2xl max-w-md w-full p-4 shadow-2xl relative flex flex-col max-h-[85vh] text-left">
+            
+            <button onclick="toggleAiDrawer()" class="absolute top-3 right-3 text-slate-400 hover:text-white text-xl p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- AI Header -->
+            <div class="flex items-center space-x-2.5 border-b border-blue-800/40 pb-2.5 mb-2.5">
+                <div class="w-8 h-8 rounded-full bg-blue-600/30 border border-blue-400/60 flex items-center justify-center text-blue-300 text-sm shadow-inner">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div>
+                    <h3 class="font-cinzel text-sm sm:text-base font-bold text-blue-300">A.R.T.H.U.R. - AI Curator</h3>
+                    <p class="text-[10px] text-blue-200/70">Your gallery mystery assistant & guide</p>
+                </div>
+            </div>
+
+            <!-- Why do we need AI? (Explanation & Chat Log) -->
+            <div id="aiChatLog" class="flex-1 overflow-y-auto space-y-2.5 p-2.5 bg-slate-950/90 rounded-xl border border-blue-900/40 text-xs font-sans mb-2.5 min-h-[140px] max-h-[35vh]">
+                <div class="flex items-start space-x-2">
+                    <div class="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-blue-950/80 border border-blue-800/50 text-blue-100 p-2 rounded-lg rounded-tl-none max-w-[90%] leading-relaxed">
+                        Greetings, detective! I am <strong>A.R.T.H.U.R.</strong> Why am I here? Solving complex historical and scientific legacies requires a curator. I am here to inspect your pedestal, give subtle riddles for your next steps, and ensure you unlock the secret vault!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick AI Prompt Buttons -->
+            <div class="grid grid-cols-2 gap-1.5 mb-2">
+                <button onclick="aiAnalyzePedestal()" class="p-1.5 bg-blue-900/40 hover:bg-blue-800/60 text-blue-200 text-[11px] rounded-lg border border-blue-700/40 transition text-left flex items-center space-x-1">
+                    <i class="fa-solid fa-magnifying-glass-chart text-blue-400"></i>
+                    <span class="truncate">Analyze Pedestal</span>
+                </button>
+                <button onclick="aiGiveNextHint()" class="p-1.5 bg-amber-900/40 hover:bg-amber-800/60 text-amber-200 text-[11px] rounded-lg border border-amber-700/40 transition text-left flex items-center space-x-1">
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+                    <span class="truncate">Next Step Clue</span>
+                </button>
+            </div>
+
+            <!-- AI Chat Input Box -->
+            <div class="flex gap-1.5">
+                <input id="aiUserInput" type="text" placeholder="Ask AI (e.g. 'Who is slot 1?')" onkeydown="if(event.key==='Enter') sendAiMessage()" class="flex-1 bg-slate-950 text-slate-100 border border-blue-800/60 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-400">
+                <button onclick="sendAiMessage()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs transition flex items-center justify-center">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Toast / Feedback Banner -->
+    <div id="toastMessage" class="fixed bottom-14 left-1/2 transform -translate-x-1/2 z-40 opacity-0 pointer-events-none transition-all duration-300 bg-stone-900/95 text-amber-300 border border-amber-500 px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-2.5 text-xs sm:text-sm font-semibold">
+        <i id="toastIcon" class="fa-solid fa-circle-info text-amber-400"></i>
+        <span id="toastText">Select portraits according to clues!</span>
+    </div>
+
+    <!-- Footer Bar -->
+    <footer class="relative z-30 bg-stone-950/80 border-t border-amber-950/60 py-2 px-3 text-center text-[10px] sm:text-xs text-stone-400 flex flex-wrap justify-between items-center max-w-7xl mx-auto w-full">
+        <div>
+            <span><i class="fa-regular fa-lightbulb text-amber-400 mr-1"></i> Tap any portrait to place on pedestal.</span>
+        </div>
+        <div class="font-mono text-[10px] text-amber-500/80">
+            Gallery Vault v2.9 (Mobile Optimized)
+        </div>
+    </footer>
+
+    <!-- Clue Journal Modal Drawer -->
+    <div id="journalModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 p-3">
+        <div class="bg-stone-900 border-2 border-amber-600/70 rounded-2xl max-w-lg w-full p-4 sm:p-5 shadow-2xl relative flex flex-col max-h-[85vh]">
+            
+            <button onclick="toggleJournalModal()" class="absolute top-3 right-3 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center space-x-2.5 border-b border-amber-800/40 pb-2.5 mb-3">
+                <i class="fa-solid fa-book-bookmark text-xl text-amber-400"></i>
+                <h3 class="font-cinzel text-base sm:text-lg font-bold text-amber-300">Curator's Encrypted Journal</h3>
+            </div>
+
+            <div class="overflow-y-auto pr-1 space-y-3 font-clue text-amber-100/90 text-xs sm:text-sm leading-relaxed">
+                <div class="p-3 bg-stone-950/80 rounded-xl border border-amber-900/50 shadow-inner">
+                    <p class="text-amber-400 font-bold mb-1.5 uppercase tracking-wide text-xs">"The 5 Pillars of Human Legacy"</p>
+                    <p class="text-slate-300 italic mb-3 text-xs">Place the 5 key figures on the pedestal in this exact sequence:</p>
+                    
+                    <ol class="list-decimal list-inside space-y-2 pl-1">
+                        <li class="pl-1.5 border-l-2 border-amber-500/50">
+                            <strong class="text-amber-300">First:</strong> <span class="italic text-amber-100">"The towering giant of biology."</span>
+                        </li>
+                        <li class="pl-1.5 border-l-2 border-amber-500/50">
+                            <strong class="text-amber-300">Second:</strong> <span class="italic text-amber-100">"The absolute monarch of music."</span>
+                        </li>
+                        <li class="pl-1.5 border-l-2 border-amber-500/50">
+                            <strong class="text-amber-300">Third:</strong> <span class="italic text-amber-100">"The supreme titan of science."</span>
+                        </li>
+                        <li class="pl-1.5 border-l-2 border-amber-500/50">
+                            <strong class="text-amber-300">Fourth:</strong> <span class="italic text-amber-100">"The unrivaled pinnacle of literature."</span>
+                        </li>
+                        <li class="pl-1.5 border-l-2 border-amber-500/50">
+                            <strong class="text-amber-300">Fifth:</strong> <span class="italic text-amber-100">"The ultimate master of art."</span>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-2.5 border-t border-amber-800/40 flex justify-end">
+                <button onclick="toggleJournalModal()" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold rounded-lg text-xs transition">
+                    Got it
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Target Solution Sequence
+        const CORRECT_SEQUENCE = ['darwin', 'michael_jackson', 'einstein', 'shakespeare', 'van_gogh'];
+        
+        let selectedSequence = []; // Holds user-selected IDs in order
+        let isAudioMuted = false;
+        let isSolved = false;
+
+        // Character Clues mapping for AI
+        const AI_CLUES = {
+            darwin: { name: "Charles Darwin", hint: "The naturalist who discovered natural selection." },
+            michael_jackson: { name: "Michael Jackson", hint: "The legendary King of Pop music." },
+            einstein: { name: "Albert Einstein", hint: "The physicist who formulated relativity." },
+            shakespeare: { name: "William Shakespeare", hint: "The immortal playwright and bard." },
+            van_gogh: { name: "Vincent van Gogh", hint: "The post-impressionist master of expressive art." }
+        };
+
+        // All 17 Luminaries with custom image URLs
+        const CHARACTERS = [
+            { id: 'bach', name: 'Johann Sebastian Bach', role: 'Baroque Composer', bio: 'The towering genius of baroque music.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Bach.jpg' },
+            { id: 'beethoven', name: 'Ludwig van Beethoven', role: 'Classical Composer', bio: 'The deaf maestro of classical symphonies.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Beethoven.jpg' },
+            { id: 'dali', name: 'Salvador Dalí', role: 'Surrealist Painter', bio: 'Master of dreamlike surrealist art.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Dali.jpg' },
+            { id: 'dante', name: 'Dante Alighieri', role: 'Italian Poet', bio: 'Author of the Divine Comedy.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Dante.jpg' },
+            { id: 'darwin', name: 'Charles Darwin', role: 'Biologist', bio: 'Pioneer of evolution and natural selection.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Darwin.jpg' },
+            { id: 'einstein', name: 'Albert Einstein', role: 'Physicist', bio: 'Titan of theoretical physics.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Einstein.jpg' },
+            { id: 'elvis', name: 'Elvis Presley', role: 'Rock Icon', bio: 'The King of Rock and Roll.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Elvis.jpg' },
+            { id: 'galileo', name: 'Galileo Galilei', role: 'Astronomer', bio: 'Father of observational astronomy.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Galileo.jpg' },
+            { id: 'madonna', name: 'Madonna', role: 'Pop Icon', bio: 'The legendary Queen of Pop.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Madonna.jpg' },
+            { id: 'michael_jackson', name: 'Michael Jackson', role: 'King of Pop', bio: 'The absolute monarch of music.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Michael%20Jackson.jpg' },
+            { id: 'moliere', name: 'Molière', role: 'Playwright', bio: 'Master of French satirical comedy.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Moliere.jpg' },
+            { id: 'mozart', name: 'Wolfgang Mozart', role: 'Composer', bio: 'Prodigy of classical music.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Mozart.jpg' },
+            { id: 'newton', name: 'Sir Isaac Newton', role: 'Physicist', bio: 'Formulated universal gravitation.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Newton.jpg' },
+            { id: 'picasso', name: 'Pablo Picasso', role: 'Cubist Painter', bio: 'Co-founder of cubism and modern art.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Picasso.jpg' },
+            { id: 'shakespeare', name: 'William Shakespeare', role: 'Playwright', bio: 'Unrivaled pinnacle of English literature.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Shakespeare.jpg' },
+            { id: 'tesla', name: 'Nikola Tesla', role: 'Inventor', bio: 'Pioneer of alternating electrical current.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Tesla.jpg' },
+            { id: 'vincent_van_gogh', name: 'Vincent Van Gogh', role: 'Painter', bio: 'Master of emotional post-impressionism.', image: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Vincent%20Van%20Gogh.jpg' }
+        ];
+
+        // Sound Synthesis Helper (Web Audio API)
+        class SoundFX {
+            constructor() { this.ctx = null; }
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+            playClick() {
+                if (isAudioMuted) return;
+                try {
+                    this.init();
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.08);
+                } catch(e) {}
+            }
+            playSuccess() {
+                if (isAudioMuted) return;
+                try {
+                    this.init();
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, this.ctx.currentTime + i * 0.12);
+                        gain.gain.setValueAtTime(0.12, this.ctx.currentTime + i * 0.12);
+                        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + i * 0.12 + 0.3);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(this.ctx.currentTime + i * 0.12);
+                        osc.stop(this.ctx.currentTime + i * 0.12 + 0.3);
+                    });
+                } catch(e) {}
+            }
+            playError() {
+                if (isAudioMuted) return;
+                try {
+                    this.init();
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                    osc.frequency.setValueAtTime(130, this.ctx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.35);
+                } catch(e) {}
+            }
+        }
+
+        const audioFX = new SoundFX();
+
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            const btn = document.getElementById('btnSoundToggle');
+            const icon = document.getElementById('soundIcon');
+            const label = document.getElementById('soundLabel');
+            if (isAudioMuted) {
+                icon.className = 'fa-solid fa-volume-xmark';
+                if(label) label.textContent = 'Muted';
+                btn.classList.add('opacity-70');
+            } else {
+                icon.className = 'fa-solid fa-volume-high';
+                if(label) label.textContent = 'Audio';
+                btn.classList.remove('opacity-70');
+                audioFX.playClick();
+            }
+        }
+
+        // Shuffle portraits randomly
+        function shuffleArray(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        let randomizedPortraits = [];
+
+        function renderPortraits() {
+            if (randomizedPortraits.length === 0) {
+                randomizedPortraits = shuffleArray(CHARACTERS);
+            }
+
+            const grid = document.getElementById('portraitsGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            randomizedPortraits.forEach(char => {
+                const isSelected = selectedSequence.includes(char.id);
+                const div = document.createElement('div');
+                div.className = `picture-frame w-14 h-20 sm:w-18 sm:h-24 md:w-22 md:h-30 flex flex-col items-center justify-between p-1 relative ${isSelected ? 'in-slot' : ''}`;
+                div.setAttribute('data-id', char.id);
+                div.onclick = () => handlePortraitClick(char.id);
+
+                div.innerHTML = `
+                    <div class="inner-canvas w-full h-full relative overflow-hidden flex items-center justify-center">
+                        <img src="${char.image}" alt="${char.name}" class="w-full h-full object-cover pointer-events-none" onerror="this.src='https://placehold.co/120x160/2a1a08/d4af37?text=${encodeURIComponent(char.name.split(' ').pop())}'">
+                    </div>
+                    <span class="text-[8px] sm:text-[9px] font-cinzel text-amber-200 text-center truncate w-full mt-0.5">${char.name.split(' ').pop()}</span>
+                `;
+                grid.appendChild(div);
+            });
+
+            renderPedestal();
+        }
+
+        function renderPedestal() {
+            for (let i = 0; i < 5; i++) {
+                const slotEl = document.querySelector(`.pedestal-slot[data-slot="${i}"]`);
+                if (!slotEl) continue;
+                const contentEl = slotEl.querySelector('.slot-content');
+                
+                if (selectedSequence[i]) {
+                    const charId = selectedSequence[i];
+                    const char = CHARACTERS.find(c => c.id === charId);
+                    contentEl.innerHTML = `
+                        <div class="w-full h-full relative flex flex-col items-center justify-center group">
+                            <img src="${char.image}" alt="${char.name}" class="w-full h-full object-cover rounded border border-amber-600/70 shadow">
+                            <button onclick="event.stopPropagation(); removeFromPedestal(${i})" class="absolute -top-1 -right-1 bg-rose-700 hover:bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow-lg border border-rose-400 z-10">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    contentEl.innerHTML = `
+                        <div class="w-full h-full flex items-center justify-center text-amber-500/30 text-xs font-mono">
+                            <i class="fa-solid fa-plus opacity-40"></i>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function handlePortraitClick(charId) {
+            audioFX.playClick();
+            if (selectedSequence.includes(charId)) {
+                showToast("Already placed on the pedestal!");
+                return;
+            }
+
+            if (selectedSequence.length >= 5) {
+                showToast("Pedestal is full (5/5). Clear a slot or unlock!");
+                return;
+            }
+
+            selectedSequence.push(charId);
+            renderPortraits();
+        }
+
+        function handleSlotClick(index) {
+            audioFX.playClick();
+            if (selectedSequence[index]) {
+                removeFromPedestal(index);
+            } else {
+                showToast(`Tap any portrait on the wall for slot #${index + 1}`);
+            }
+        }
+
+        function removeFromPedestal(index) {
+            audioFX.playClick();
+            selectedSequence.splice(index, 1);
+            renderPortraits();
+        }
+
+        function clearSequence() {
+            audioFX.playClick();
+            selectedSequence = [];
+            renderPortraits();
+            showToast("Pedestal cleared.");
+        }
+
+        function resetPuzzle() {
+            audioFX.playClick();
+            selectedSequence = [];
+            isSolved = false;
+            randomizedPortraits = shuffleArray(CHARACTERS);
+            
+            const wallLeft = document.getElementById('wallLeft');
+            if (wallLeft) wallLeft.classList.remove('open');
+
+            const video = document.getElementById('vaultVideo');
+            if (video) {
+                video.pause();
+                video.currentTime = 0;
+            }
+
+            const statusMsg = document.getElementById('vaultStatusMessage');
+            if (statusMsg) statusMsg.style.opacity = '0';
+
+            renderPortraits();
+            showToast("Puzzle reset!");
+        }
+
+        function verifySequence() {
+            audioFX.playClick();
+            if (selectedSequence.length < 5) {
+                audioFX.playError();
+                showToast("Please place all 5 portraits first!");
+                return;
+            }
+
+            let isCorrect = true;
+            for (let i = 0; i < 5; i++) {
+                if (selectedSequence[i] !== CORRECT_SEQUENCE[i]) {
+                    isCorrect = false;
+                    break;
+                }
+            }
+
+            if (isCorrect) {
+                isSolved = true;
+                audioFX.playSuccess();
+                triggerVaultOpen();
+            } else {
+                audioFX.playError();
+                showToast("Incorrect sequence! Check Journal or ask AI.");
+            }
+        }
+
+        function triggerVaultOpen() {
+            const wallLeft = document.getElementById('wallLeft');
+            if (wallLeft) wallLeft.classList.add('open');
+
+            const statusMsg = document.getElementById('vaultStatusMessage');
+            if (statusMsg) statusMsg.style.opacity = '1';
+
+            const video = document.getElementById('vaultVideo');
+            if (video) {
+                video.currentTime = 0;
+                video.play().catch(e => console.log(e));
+            }
+
+            showToast("Vault unlocked successfully!");
+        }
+
+        // AI Assistant functions
+        function toggleAiDrawer() {
+            audioFX.playClick();
+            const modal = document.getElementById('aiDrawerModal');
+            if (modal) {
+                if (modal.classList.contains('opacity-0')) {
+                    modal.classList.remove('opacity-0', 'pointer-events-none');
+                } else {
+                    modal.classList.add('opacity-0', 'pointer-events-none');
+                }
+            }
+        }
+
+        function toggleJournalModal() {
+            audioFX.playClick();
+            const modal = document.getElementById('journalModal');
+            if (modal) {
+                if (modal.classList.contains('opacity-0')) {
+                    modal.classList.remove('opacity-0', 'pointer-events-none');
+                } else {
+                    modal.classList.add('opacity-0', 'pointer-events-none');
+                }
+            }
+        }
+
+        function appendAiMessage(sender, text) {
+            const chatLog = document.getElementById('aiChatLog');
+            if (!chatLog) return;
+            const div = document.createElement('div');
+            div.className = `flex items-start space-x-2 ${sender === 'user' ? 'justify-end' : ''}`;
+            
+            if (sender === 'ai') {
+                div.innerHTML = `
+                    <div class="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-blue-950/80 border border-blue-800/50 text-blue-100 p-2 rounded-lg rounded-tl-none max-w-[90%] leading-relaxed text-xs">
+                        ${text}
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `
+                    <div class="bg-blue-800/60 text-slate-100 p-2 rounded-lg rounded-tr-none max-w-[90%] leading-relaxed text-xs">
+                        ${text}
+                    </div>
+                `;
+            }
+            chatLog.appendChild(div);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        function aiAnalyzePedestal() {
+            audioFX.playClick();
+            if (selectedSequence.length === 0) {
+                appendAiMessage('ai', "Your pedestal is completely empty! You need to place 5 figures in order.");
+                return;
+            }
+            let correctCount = 0;
+            let feedback = `You have placed ${selectedSequence.length}/5 figures. `;
+            for (let i = 0; i < selectedSequence.length; i++) {
+                if (selectedSequence[i] === CORRECT_SEQUENCE[i]) {
+                    correctCount++;
+                }
+            }
+            feedback += `Out of these, <strong>${correctCount}</strong> are in the correct slot position!`;
+            appendAiMessage('ai', feedback);
+        }
+
+        function aiGiveNextHint() {
+            audioFX.playClick();
+            // Find first incorrect or missing
+            for (let i = 0; i < 5; i++) {
+                if (!selectedSequence[i]) {
+                    const targetId = CORRECT_SEQUENCE[i];
+                    appendAiMessage('ai', `Hint for slot #${i + 1}: It is <strong>${AI_CLUES[targetId].name}</strong> — ${AI_CLUES[targetId].hint}`);
+                    return;
+                }
+                if (selectedSequence[i] !== CORRECT_SEQUENCE[i]) {
+                    appendAiMessage('ai', `Notice: Slot #${i + 1} (${CHARACTERS.find(c => c.id === selectedSequence[i]).name}) is incorrect. Look for someone else!`);
+                    return;
+                }
+            }
+            appendAiMessage('ai', "All 5 slots look correct! Tap the 'Unlock' button to open the vault.");
+        }
+
+        function sendAiMessage() {
+            const input = document.getElementById('aiUserInput');
+            if (!input || !input.value.trim()) return;
+            const userText = input.value.trim();
+            appendAiMessage('user', userText);
+            input.value = '';
+
+            setTimeout(() => {
+                const lower = userText.toLowerCase();
+                if (lower.includes('why') || lower.includes('need') || lower.includes('help')) {
+                    appendAiMessage('ai', "I am your AI Curator! I guide you through the historical puzzles, give subtle hints, and analyze your pedestal so you don't get stuck.");
+                } else if (lower.includes('slot 1') || lower.includes('first')) {
+                    appendAiMessage('ai', `Slot #1 clue: ${AI_CLUES['darwin'].hint}`);
+                } else if (lower.includes('slot 2') || lower.includes('second')) {
+                    appendAiMessage('ai', `Slot #2 clue: ${AI_CLUES['michael_jackson'].hint}`);
+                } else if (lower.includes('slot 3') || lower.includes('third')) {
+                    appendAiMessage('ai', `Slot #3 clue: ${AI_CLUES['einstein'].hint}`);
+                } else if (lower.includes('slot 4') || lower.includes('fourth')) {
+                    appendAiMessage('ai', `Slot #4 clue: ${AI_CLUES['shakespeare'].hint}`);
+                } else if (lower.includes('slot 5') || lower.includes('fifth')) {
+                    appendAiMessage('ai', `Slot #5 clue: ${AI_CLUES['van_gogh'].hint}`);
+                } else {
+                    appendAiMessage('ai', "That's a fascinating question! Remember the 5 pillars: Biology, Music, Physics, Literature, and Art. Try asking 'Analyze Pedestal' or 'Next Step Clue'!");
+                }
+            }, 600);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toastMessage');
+            const text = document.getElementById('toastText');
+            if (!toast || !text) return;
+            text.textContent = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // Initialize on window load
+        window.onload = function() {
+            renderPortraits();
+        };
+    </script>
+</body>
+</html>
