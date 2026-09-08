@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Portrait Vault - Mystery Puzzle Game</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Plus+Jakarta+Sans:wght@400;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --gold-primary: #d4af37;
+            --gold-light: #f3e5ab;
+            --gold-dark: #aa7c11;
+            --wood-dark: #1f140e;
+            --wallpaper-bg: #140d12;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--wallpaper-bg);
+            color: #e2e8f0;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+
+        .font-clue {
+            font-family: 'Special Elite', cursive;
+        }
+
+        /* Victorian Wallpaper Pattern */
+        .museum-wall {
+            background-color: #1a0f16;
+            background-image: 
+                radial-gradient(circle at 50% 30%, rgba(212, 175, 55, 0.15) 0%, transparent 60%),
+                radial-gradient(circle at 20% 80%, rgba(139, 0, 0, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 0, 0, 0.2) 0%, transparent 50%),
+                repeating-linear-gradient(45deg, rgba(30, 15, 25, 0.5) 0px, rgba(30, 15, 25, 0.5) 20px, rgba(10, 5, 10, 0.5) 20px, rgba(10, 5, 10, 0.5) 40px);
+            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9);
+        }
+
+        /* Gold Frame Styling */
+        .picture-frame {
+            position: relative;
+            background: linear-gradient(135deg, #f5d77f 0%, #b8860b 25%, #ffd700 50%, #8b6508 75%, #d4af37 100%);
+            border-radius: 12px;
+            padding: 8px;
+            box-shadow: 
+                0 15px 30px rgba(0, 0, 0, 0.8),
+                0 0 15px rgba(212, 175, 55, 0.2),
+                inset 0 0 8px rgba(0, 0, 0, 0.8);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer;
+        }
+
+        .picture-frame:hover {
+            transform: translateY(-6px) scale(1.03);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.9),
+                0 0 25px rgba(243, 229, 171, 0.4);
+        }
+
+        .picture-frame.in-slot {
+            opacity: 0.4;
+            filter: grayscale(0.5);
+            transform: scale(0.95);
+        }
+
+        .inner-canvas {
+            background: radial-gradient(circle, #3a2b37 0%, #170d19 100%);
+            border: 3px solid #2a1a08;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
+        }
+
+        /* Slot Drop Area Styling */
+        .pedestal-slot {
+            background: rgba(15, 10, 20, 0.8);
+            border: 2px dashed #b8860b;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+        }
+
+        .pedestal-slot.drag-over {
+            background: rgba(212, 175, 55, 0.25);
+            border-color: #ffe066;
+            transform: scale(1.05);
+        }
+
+        /* Wall Opening Mechanism Animations */
+        .wall-panel {
+            transition: transform 2.2s cubic-bezier(0.77, 0, 0.175, 1);
+            will-change: transform;
+        }
+
+        .wall-left.open {
+            transform: translateY(-120%);
+        }
+
+        /* Vault Door Glow Effects */
+        @keyframes vaultGlow {
+            0%, 100% { filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.3)); }
+            50% { filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.7)); }
+        }
+
+        .vault-door-container {
+            animation: vaultGlow 3s infinite ease-in-out;
+        }
+
+        /* Torch Flicker */
+        @keyframes torchLight {
+            0%, 100% { opacity: 0.85; transform: scale(1); }
+            25% { opacity: 1; transform: scale(1.03); }
+            50% { opacity: 0.75; transform: scale(0.97); }
+            75% { opacity: 0.95; transform: scale(1.02); }
+        }
+
+        .light-glow {
+            animation: torchLight 2.5s infinite ease-in-out;
+        }
+
+        /* Custom Scrollbar for Journal & Gallery */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f140e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #8b6508;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative bg-black text-slate-100 select-none overflow-x-hidden">
+
+    <!-- Top Navigation Header -->
+    <header class="relative z-30 bg-stone-950/90 border-b border-amber-900/40 px-4 py-3 shadow-2xl backdrop-blur-md">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-amber-600/20 border border-amber-500/50 flex items-center justify-center text-amber-400 text-xl shadow-inner">
+                    <i class="fa-solid fa-vault"></i>
+                </div>
+                <div>
+                    <h1 class="font-cinzel text-xl md:text-2xl font-bold tracking-wider text-amber-400 drop-shadow">THE GALLERY VAULT</h1>
+                    <p class="text-xs text-amber-200/70">Arrange the 5 chosen figures on the pedestal to unlock the secret vault</p>
+                </div>
+            </div>
+
+            <!-- Header Action Controls -->
+            <div class="flex items-center space-x-2 md:space-x-3">
+                <button id="btnSoundToggle" onclick="toggleAudio()" class="px-3 py-2 bg-stone-800 hover:bg-stone-700 text-amber-300 text-xs md:text-sm font-semibold rounded-lg border border-amber-700/50 transition flex items-center space-x-2">
+                    <i class="fa-solid fa-volume-high" id="soundIcon"></i>
+                    <span id="soundLabel" class="hidden sm:inline">Audio: On</span>
+                </button>
+                <button onclick="toggleJournalModal()" class="px-3 py-2 bg-amber-900/60 hover:bg-amber-800 text-amber-200 text-xs md:text-sm font-semibold rounded-lg border border-amber-600/50 transition flex items-center space-x-2 shadow-lg">
+                    <i class="fa-solid fa-book-open text-amber-400"></i>
+                    <span>Journal Clues</span>
+                </button>
+                <button onclick="resetPuzzle()" class="px-3 py-2 bg-stone-800 hover:bg-stone-700 text-slate-300 text-xs md:text-sm font-semibold rounded-lg border border-stone-600 transition flex items-center space-x-1">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span class="hidden sm:inline">Reset</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Interactive Stage -->
+    <main class="relative flex-1 flex flex-col items-center justify-center p-3 md:p-6 overflow-hidden min-h-[680px]">
+
+        <!-- FOREGROUND: Wall & Pedestal Layer -->
+        <div id="wallPanelContainer" class="relative z-10 w-full max-w-7xl flex items-center justify-center my-auto">
+            
+            <div class="relative w-full rounded-2xl border-4 border-amber-950/80 shadow-[0_25px_60px_rgba(0,0,0,0.95)] bg-stone-950 p-3 md:p-5">
+                
+                <!-- Upper Secret Chamber / Sliding Frame Area -->
+                <div class="relative w-full overflow-hidden rounded-xl bg-black border-2 border-amber-800/60 shadow-inner min-h-[360px] md:min-h-[440px] mb-4 flex items-center justify-center">
+                    
+                    <!-- SECRET VAULT VIDEO (Underneath Wall Panel) -->
+                    <div id="vaultBackground" class="absolute inset-0 z-0 flex items-center justify-center bg-black">
+                        <video id="vaultVideo" class="w-full h-full object-cover" playsinline preload="auto">
+                            <source src="https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/VaultOpens.mp4" type="video/mp4">
+                            Your browser does not support video playback.
+                        </video>
+
+                        <!-- Vault Unlock Text Overlay -->
+                        <div id="vaultStatusMessage" class="absolute inset-x-0 bottom-6 text-center opacity-0 transition-opacity duration-1000 z-20 pointer-events-none">
+                            <span class="font-cinzel text-xl md:text-3xl font-black text-amber-400 tracking-widest bg-black/85 px-6 py-2 rounded-full border border-amber-500 shadow-2xl">
+                                VAULT UNLOCKED!
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Sliding Front Wall Panel (Portraits Grid) -->
+                    <div id="wallLeft" class="wall-panel wall-left absolute inset-0 z-10 museum-wall p-3 md:p-5 flex flex-col justify-between overflow-y-auto">
+                        <!-- Ambient Wall Torch Lights -->
+                        <div class="absolute top-2 left-4 w-12 h-12 rounded-full bg-amber-500/20 blur-xl light-glow pointer-events-none"></div>
+                        <div class="absolute top-2 right-4 w-12 h-12 rounded-full bg-amber-500/20 blur-xl light-glow pointer-events-none"></div>
+
+                        <!-- Wall Header Banner -->
+                        <div class="text-center mb-2">
+                            <span class="inline-block font-cinzel text-xs md:text-sm uppercase tracking-[0.3em] text-amber-300/80 border-b border-amber-500/30 pb-1">
+                                The Great Gallery of Luminaries
+                            </span>
+                            <h2 class="font-cinzel text-base md:text-xl font-bold text-amber-100 mt-1 drop-shadow">
+                                Place 5 Correct Busts in Sequence
+                            </h2>
+                        </div>
+
+                        <!-- Grid of 17 Portrait Bust Frames -->
+                        <div id="portraitsGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-2 md:gap-3 justify-items-center max-h-[50vh] overflow-y-auto p-2">
+                            <!-- Portrait Items injected dynamically -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Bottom Sequence Pedestal Receiver -->
+                <div class="bg-stone-950/90 rounded-xl p-3 md:p-4 border border-amber-800/50 shadow-2xl backdrop-blur-md">
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-3">
+                        
+                        <div class="text-center md:text-left">
+                            <h3 class="font-cinzel text-xs md:text-base font-bold text-amber-400 flex items-center justify-center md:justify-start gap-2">
+                                <i class="fa-solid fa-key"></i> Sequence Pedestal (5 Required)
+                            </h3>
+                            <p class="text-[11px] md:text-xs text-slate-400">Click a portrait to place or remove. Check clues in the Journal.</p>
+                        </div>
+
+                        <!-- 5 Target Sequence Slots -->
+                        <div class="flex flex-wrap items-center justify-center gap-1.5 sm:gap-3 my-1">
+                            <div class="pedestal-slot w-14 h-18 sm:w-20 sm:h-24 md:w-22 md:h-28 flex flex-col items-center justify-center relative cursor-pointer" data-slot="0" onclick="handleSlotClick(0)">
+                                <span class="text-[9px] text-amber-500/70 font-mono absolute top-0.5 left-1.5">#1</span>
+                                <div class="slot-content w-full h-full flex items-center justify-center p-1"></div>
+                            </div>
+                            <div class="pedestal-slot w-14 h-18 sm:w-20 sm:h-24 md:w-22 md:h-28 flex flex-col items-center justify-center relative cursor-pointer" data-slot="1" onclick="handleSlotClick(1)">
+                                <span class="text-[9px] text-amber-500/70 font-mono absolute top-0.5 left-1.5">#2</span>
+                                <div class="slot-content w-full h-full flex items-center justify-center p-1"></div>
+                            </div>
+                            <div class="pedestal-slot w-14 h-18 sm:w-20 sm:h-24 md:w-22 md:h-28 flex flex-col items-center justify-center relative cursor-pointer" data-slot="2" onclick="handleSlotClick(2)">
+                                <span class="text-[9px] text-amber-500/70 font-mono absolute top-0.5 left-1.5">#3</span>
+                                <div class="slot-content w-full h-full flex items-center justify-center p-1"></div>
+                            </div>
+                            <div class="pedestal-slot w-14 h-18 sm:w-20 sm:h-24 md:w-22 md:h-28 flex flex-col items-center justify-center relative cursor-pointer" data-slot="3" onclick="handleSlotClick(3)">
+                                <span class="text-[9px] text-amber-500/70 font-mono absolute top-0.5 left-1.5">#4</span>
+                                <div class="slot-content w-full h-full flex items-center justify-center p-1"></div>
+                            </div>
+                            <div class="pedestal-slot w-14 h-18 sm:w-20 sm:h-24 md:w-22 md:h-28 flex flex-col items-center justify-center relative cursor-pointer" data-slot="4" onclick="handleSlotClick(4)">
+                                <span class="text-[9px] text-amber-500/70 font-mono absolute top-0.5 left-1.5">#5</span>
+                                <div class="slot-content w-full h-full flex items-center justify-center p-1"></div>
+                            </div>
+                        </div>
+
+                        <!-- Action Control Buttons -->
+                        <div class="flex items-center gap-2">
+                            <button onclick="clearSequence()" class="px-3 py-2 bg-stone-800 hover:bg-stone-700 text-xs text-rose-300 rounded-lg border border-rose-900/40 transition">
+                                <i class="fa-solid fa-trash-can mr-1"></i> Clear
+                            </button>
+                            <button id="btnUnlock" onclick="verifySequence()" class="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-bold text-xs md:text-sm rounded-lg shadow-lg shadow-amber-600/30 transition transform active:scale-95 flex items-center gap-2">
+                                <i class="fa-solid fa-lock-open"></i> Unlock Wall
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Status Toast / Feedback Banner -->
+    <div id="toastMessage" class="fixed bottom-16 left-1/2 transform -translate-x-1/2 z-40 opacity-0 pointer-events-none transition-all duration-300 bg-stone-900/95 text-amber-300 border border-amber-500 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 text-sm font-semibold">
+        <i id="toastIcon" class="fa-solid fa-circle-info text-amber-400 text-lg"></i>
+        <span id="toastText">Select 5 portraits according to the journal clue!</span>
+    </div>
+
+    <!-- Footer Bar -->
+    <footer class="relative z-30 bg-stone-950/80 border-t border-amber-950/60 py-2.5 px-4 text-center text-xs text-stone-400 flex flex-wrap justify-between items-center max-w-7xl mx-auto w-full">
+        <div>
+            <span><i class="fa-regular fa-lightbulb text-amber-400 mr-1"></i> Tip: Click on any portrait picture to inspect or place it on the sequence pedestal.</span>
+        </div>
+        <div class="mt-1 sm:mt-0 font-mono text-[11px] text-amber-500/80">
+            Gallery Lock Mechanism v2.8
+        </div>
+    </footer>
+
+    <!-- Clue Journal Modal Drawer -->
+    <div id="journalModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 p-4">
+        <div class="bg-stone-900 border-2 border-amber-600/70 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative flex flex-col max-h-[85vh]">
+            
+            <button onclick="toggleJournalModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center space-x-3 border-b border-amber-800/40 pb-3 mb-4">
+                <i class="fa-solid fa-book-bookmark text-2xl text-amber-400"></i>
+                <h3 class="font-cinzel text-xl font-bold text-amber-300">Curator's Encrypted Journal</h3>
+            </div>
+
+            <div class="overflow-y-auto pr-2 space-y-4 font-clue text-amber-100/90 text-sm md:text-base leading-relaxed">
+                <div class="p-4 bg-stone-950/80 rounded-xl border border-amber-900/50 shadow-inner">
+                    <p class="text-amber-400 font-bold mb-2 uppercase tracking-wide">"The 5 Pillars of Human Legacy"</p>
+                    <p class="text-slate-300 italic mb-4">Place the 5 key figures on the pedestal in this exact sequence:</p>
+                    
+                    <ol class="list-decimal list-inside space-y-3 pl-2">
+                        <li class="pl-2 border-l-2 border-amber-500/50">
+                            <strong class="text-amber-300">First:</strong> <span class="italic text-amber-100">"The towering giant of biology."</span>
+                        </li>
+                        <li class="pl-2 border-l-2 border-amber-500/50">
+                            <strong class="text-amber-300">Second:</strong> <span class="italic text-amber-100">"The absolute monarch of music."</span>
+                        </li>
+                        <li class="pl-2 border-l-2 border-amber-500/50">
+                            <strong class="text-amber-300">Third:</strong> <span class="italic text-amber-100">"The supreme titan of science."</span>
+                        </li>
+                        <li class="pl-2 border-l-2 border-amber-500/50">
+                            <strong class="text-amber-300">Fourth:</strong> <span class="italic text-amber-100">"The unrivaled pinnacle of literature."</span>
+                        </li>
+                        <li class="pl-2 border-l-2 border-amber-500/50">
+                            <strong class="text-amber-300">Fifth:</strong> <span class="italic text-amber-100">"The ultimate master of art."</span>
+                        </li>
+                    </ol>
+                </div>
+
+                <div class="p-3 bg-amber-950/30 rounded-lg border border-amber-700/30 text-xs text-amber-300/80">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> Out of the 17 masters on the wall, only these 5 will trigger the vault's opening mechanism!
+                </div>
+            </div>
+
+            <div class="mt-5 pt-3 border-t border-amber-800/40 flex justify-end">
+                <button onclick="toggleJournalModal()" class="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold rounded-lg text-sm transition">
+                    Got it, Let's Solve
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portrait Inspection Modal -->
+    <div id="inspectModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 p-4">
+        <div class="bg-stone-900 border-2 border-amber-500/80 rounded-2xl max-w-md w-full p-6 shadow-2xl relative text-center">
+            
+            <button onclick="closeInspectModal()" class="absolute top-3 right-3 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div id="inspectImageContainer" class="w-36 h-48 mx-auto mb-4 picture-frame shadow-2xl overflow-hidden rounded-lg">
+                <!-- Image inserted dynamically -->
+            </div>
+
+            <h3 id="inspectName" class="font-cinzel text-xl font-bold text-amber-400 mb-1">Character Name</h3>
+            <p id="inspectRole" class="text-xs font-mono text-amber-200/70 mb-3">Role / Era</p>
+            <p id="inspectBio" class="text-sm text-slate-300 bg-stone-950/80 p-3 rounded-lg border border-amber-900/40 mb-4">
+                Short bio description...
+            </p>
+
+            <div class="flex gap-2 justify-center">
+                <button id="btnSelectFromInspect" onclick="selectCurrentInspected()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold rounded-lg text-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Place on Pedestal
+                </button>
+                <button onclick="closeInspectModal()" class="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-slate-300 font-semibold rounded-lg text-sm transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Target Solution Sequence
+        const CORRECT_SEQUENCE = ['darwin', 'michael_jackson', 'einstein', 'shakespeare', 'van_gogh'];
+        
+        let selectedSequence = []; // Holds user-selected IDs in order
+        let inspectedCharacterId = null;
+        let isAudioMuted = false;
+        let isSolved = false;
+
+        // All 17 Luminaries with images
+        const CHARACTERS = [
+            {
+                id: 'bach',
+                name: 'Johann Sebastian Bach',
+                title: 'Baroque Master (1685–1750)',
+                bio: 'German composer and musician of the Baroque period, revered for masterpieces like the Brandenburg Concertos.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Bach.jpg'
+            },
+            {
+                id: 'beethoven',
+                name: 'Ludwig van Beethoven',
+                title: 'Classical Virtuoso (1770–1827)',
+                bio: 'German composer whose 5th and 9th Symphonies reshaped music history despite his deafness.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Beethoven.jpg'
+            },
+            {
+                id: 'dali',
+                name: 'Salvador Dalí',
+                title: 'Surrealist Visionary (1904–1989)',
+                bio: 'Iconic Spanish surrealist painter famous for melting clocks and his signature mustache.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Dali.jpg'
+            },
+            {
+                id: 'dante',
+                name: 'Dante Alighieri',
+                title: 'Supreme Poet (1265–1321)',
+                bio: 'Italian poet of the Middle Ages, legendary author of the Divine Comedy.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Dante.jpg'
+            },
+            {
+                id: 'darwin',
+                name: 'Charles Darwin',
+                title: 'The Towering Giant of Biology (1809–1882)',
+                bio: 'English naturalist who established the groundbreaking principles of evolutionary science.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Darwin.jpg'
+            },
+            {
+                id: 'einstein',
+                name: 'Albert Einstein',
+                title: 'The Supreme Titan of Science (1879–1955)',
+                bio: 'Theoretical physicist who transformed physics with his theory of relativity and E = mc².',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Einstein.jpg'
+            },
+            {
+                id: 'elvis',
+                name: 'Elvis Presley',
+                title: 'King of Rock & Roll (1935–1977)',
+                bio: 'American singer and cultural icon, widely regarded as one of the most significant musical figures of the 20th century.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Elvis.jpg'
+            },
+            {
+                id: 'galileo',
+                name: 'Galileo Galilei',
+                title: 'Father of Modern Astronomy (1564–1642)',
+                bio: 'Italian astronomer and physicist who championed heliocentrism and telescopic discoveries.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Galileo.jpg'
+            },
+            {
+                id: 'madonna',
+                name: 'Madonna',
+                title: 'Queen of Pop (1958–Present)',
+                bio: 'Revolutionary pop music pioneer known for her endless artistic reinvention and iconic hits.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Madonna.jpg'
+            },
+            {
+                id: 'michael_jackson',
+                name: 'Michael Jackson',
+                title: 'The Absolute Monarch of Music (1958–2009)',
+                bio: 'The undisputed King of Pop, famed for Thriller, the moonwalk, and unmatched musical genius.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Michael%20Jackson.jpg'
+            },
+            {
+                id: 'moliere',
+                name: 'Molière',
+                title: 'French Comedy Legend (1622–1673)',
+                bio: 'French playwright and actor, considered one of the greatest masters of theatrical comedy.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Moliere.jpg'
+            },
+            {
+                id: 'mozart',
+                name: 'Wolfgang Amadeus Mozart',
+                title: 'Prodigious Classical Composer (1756–1791)',
+                bio: 'Child prodigy and prolific composer who shaped classical music with hundreds of sublime works.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Mozart.jpg'
+            },
+            {
+                id: 'newton',
+                name: 'Sir Isaac Newton',
+                title: 'Father of Physics & Calculus (1643–1727)',
+                bio: 'English mathematician and physicist who formulated the laws of motion and universal gravitation.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Newton.jpg'
+            },
+            {
+                id: 'picasso',
+                name: 'Pablo Picasso',
+                title: 'Cubist Pioneer (1881–1973)',
+                bio: 'Spanish painter and sculptor who co-founded the Cubist movement and revolutionized modern art.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Picasso.jpg'
+            },
+            {
+                id: 'shakespeare',
+                name: 'William Shakespeare',
+                title: 'The Unrivaled Pinnacle of Literature (1564–1616)',
+                bio: 'The immortal Bard of Avon, author of Hamlet, Macbeth, Romeo and Juliet, and classic sonnets.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Shakespeare.jpg'
+            },
+            {
+                id: 'tesla',
+                name: 'Nikola Tesla',
+                title: 'Electrical Genius (1856–1943)',
+                bio: 'Visionary inventor who harnessed alternating current (AC) electricity and modern wireless concepts.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Tesla.jpg'
+            },
+            {
+                id: 'van_gogh',
+                name: 'Vincent Van Gogh',
+                title: 'The Ultimate Master of Art (1853–1890)',
+                bio: 'Post-Impressionist painter whose emotional expression and vibrant brushwork produced Starry Night.',
+                img: 'https://raw.githubusercontent.com/happypooya/Mad-scientist/refs/heads/main/Vincent%20Van%20Gogh.jpg'
+            }
+        ];
+
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+            }
+
+            playClick() {
+                if (isAudioMuted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(520, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(220, this.ctx.currentTime + 0.08);
+
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+
+            playError() {
+                if (isAudioMuted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(110, this.ctx.currentTime + 0.15);
+
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.35);
+            }
+
+            playSuccessFanfare() {
+                if (isAudioMuted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99]; // C E G C E G
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.12);
+
+                    gain.gain.setValueAtTime(0, this.ctx.currentTime + idx * 0.12);
+                    gain.gain.linearRampToValueAtTime(0.3, this.ctx.currentTime + idx * 0.12 + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.12 + 0.8);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.12);
+                    osc.stop(this.ctx.currentTime + idx * 0.12 + 0.8);
+                });
+            }
+
+            playGearUnlock() {
+                if (isAudioMuted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const bufferSize = this.ctx.sampleRate * 1.2;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(200, this.ctx.currentTime);
+                filter.frequency.linearRampToValueAtTime(600, this.ctx.currentTime + 1.0);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.2);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start();
+            }
+        }
+
+        const audioFX = new SoundFX();
+
+        function renderPortraits() {
+            const gridContainer = document.getElementById('portraitsGrid');
+            if (!gridContainer) return;
+            gridContainer.innerHTML = '';
+
+            CHARACTERS.forEach(char => {
+                const inSlotIndex = selectedSequence.indexOf(char.id);
+                const isSelected = inSlotIndex !== -1;
+
+                const card = document.createElement('div');
+                card.className = `picture-frame group relative flex flex-col items-center w-20 sm:w-24 md:w-28 h-32 sm:h-36 md:h-40 ${isSelected ? 'in-slot' : ''}`;
+                card.setAttribute('draggable', 'true');
+                card.setAttribute('data-id', char.id);
+
+                card.innerHTML = `
+                    <div class="inner-canvas w-full flex-1 relative flex items-center justify-center overflow-hidden">
+                        <img src="${char.img}" alt="${char.name}" class="w-full h-full object-cover rounded" onerror="this.src='https://placehold.co/150x200/2a1b18/f3e5ab?text=${encodeURIComponent(char.name)}'" />
+                        <!-- Inspect Lens Overlay Button -->
+                        <button onclick="event.stopPropagation(); openInspectModal('${char.id}')" title="Inspect Portrait" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 hover:bg-amber-600 text-amber-200 text-xs flex items-center justify-center transition opacity-0 group-hover:opacity-100 z-10 shadow-md">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                    </div>
+                    <div class="w-full text-center mt-1 px-0.5">
+                        <p class="font-cinzel text-[10px] sm:text-[11px] font-bold text-amber-200 truncate leading-tight">${char.name}</p>
+                    </div>
+                `;
+
+                // Event Listeners for click & drag
+                card.addEventListener('click', () => handlePortraitClick(char.id));
+                card.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', char.id);
+                    audioFX.playClick();
+                });
+
+                gridContainer.appendChild(card);
+            });
+
+            renderSlots();
+        }
+
+        function renderSlots() {
+            const slots = document.querySelectorAll('.pedestal-slot');
+            
+            slots.forEach((slot, index) => {
+                const contentDiv = slot.querySelector('.slot-content');
+                if (!contentDiv) return;
+                contentDiv.innerHTML = '';
+
+                const charId = selectedSequence[index];
+                if (charId) {
+                    const char = CHARACTERS.find(c => c.id === charId);
+                    if (char) {
+                        contentDiv.innerHTML = `
+                            <div class="w-full h-full flex flex-col items-center justify-center relative group">
+                                <div class="w-full h-12 sm:h-16 md:h-20 inner-canvas rounded overflow-hidden shadow">
+                                    <img src="${char.img}" alt="${char.name}" class="w-full h-full object-cover" />
+                                </div>
+                                <span class="font-cinzel text-[9px] sm:text-[10px] font-bold text-amber-300 truncate w-full text-center mt-0.5">${char.name.split(' ')[0]}</span>
+                            </div>
+                        `;
+                    }
+                } else {
+                    contentDiv.innerHTML = `
+                        <i class="fa-regular fa-image text-stone-700 text-lg sm:text-2xl"></i>
+                    `;
+                }
+
+                // Attach Drag & Drop Handlers
+                slot.ondragover = (e) => {
+                    e.preventDefault();
+                    slot.classList.add('drag-over');
+                };
+                slot.ondragleave = () => slot.classList.remove('drag-over');
+                slot.ondrop = (e) => {
+                    e.preventDefault();
+                    slot.classList.remove('drag-over');
+                    const droppedId = e.dataTransfer.getData('text/plain');
+                    if (droppedId) {
+                        placeInSlot(droppedId, index);
+                    }
+                };
+            });
+        }
+
+        function handlePortraitClick(id) {
+            audioFX.playClick();
+            if (isSolved) return;
+
+            const existingIdx = selectedSequence.indexOf(id);
+            if (existingIdx !== -1) {
+                // Remove from sequence
+                selectedSequence.splice(existingIdx, 1);
+                showToast(`Removed from pedestal sequence.`, 'info');
+            } else {
+                // Add to next open slot
+                if (selectedSequence.length < 5) {
+                    selectedSequence.push(id);
+                    showToast(`Added to position #${selectedSequence.length}`, 'success');
+                } else {
+                    showToast(`All 5 pedestal slots are full! Clear or tap a slot to edit.`, 'warning');
+                }
+            }
+            renderPortraits();
+        }
+
+        function handleSlotClick(slotIdx) {
+            audioFX.playClick();
+            if (isSolved) return;
+
+            if (selectedSequence[slotIdx]) {
+                selectedSequence.splice(slotIdx, 1);
+                showToast(`Slot #${slotIdx + 1} cleared.`, 'info');
+                renderPortraits();
+            } else {
+                showToast(`Tap a portrait above to assign to position #${slotIdx + 1}.`, 'info');
+            }
+        }
+
+        function placeInSlot(charId, slotIndex) {
+            const currentPos = selectedSequence.indexOf(charId);
+            if (currentPos !== -1) {
+                selectedSequence.splice(currentPos, 1);
+            }
+            selectedSequence[slotIndex] = charId;
+            selectedSequence = selectedSequence.filter(Boolean);
+            audioFX.playClick();
+            renderPortraits();
+        }
+
+        function clearSequence() {
+            audioFX.playClick();
+            selectedSequence = [];
+            renderPortraits();
+            showToast("Pedestal sequence cleared.", "info");
+        }
+
+        function verifySequence() {
+            audioFX.playClick();
+
+            if (selectedSequence.length < 5) {
+                audioFX.playError();
+                showToast("You must place 5 portraits on the pedestal sequence!", "error");
+                shakePedestal();
+                return;
+            }
+
+            // Check against correct answer sequence
+            let isCorrect = true;
+            for (let i = 0; i < 5; i++) {
+                if (selectedSequence[i] !== CORRECT_SEQUENCE[i]) {
+                    isCorrect = false;
+                    break;
+                }
+            }
+
+            if (isCorrect) {
+                triggerVaultUnlock();
+            } else {
+                audioFX.playError();
+                shakePedestal();
+                showToast("Incorrect order! Re-read the Curator's Journal for clues.", "error");
+            }
+        }
+
+        function triggerVaultUnlock() {
+            isSolved = true;
+            audioFX.playGearUnlock();
+            audioFX.playSuccessFanfare();
+
+            showToast("CORRECT SEQUENCE! Wall mechanisms opening...", "success");
+
+            const btnUnlock = document.getElementById('btnUnlock');
+            if (btnUnlock) {
+                btnUnlock.disabled = true;
+                btnUnlock.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+
+            // Play background video reveal
+            const video = document.getElementById('vaultVideo');
+            if (video) {
+                video.muted = isAudioMuted;
+                video.currentTime = 0;
+                video.play().catch(e => console.log("Video autoplay blocked:", e));
+            }
+
+            // Slide top wall open
+            const wallLeft = document.getElementById('wallLeft');
+            if (wallLeft) wallLeft.classList.add('open');
+
+            setTimeout(() => {
+                const msg = document.getElementById('vaultStatusMessage');
+                if (msg) msg.classList.remove('opacity-0');
+            }, 1000);
+        }
+
+        function shakePedestal() {
+            const pedestal = document.querySelector('.museum-wall');
+            if (!pedestal) return;
+            pedestal.classList.add('animate-bounce');
+            setTimeout(() => pedestal.classList.remove('animate-bounce'), 800);
+        }
+
+        function openInspectModal(charId) {
+            audioFX.playClick();
+            inspectedCharacterId = charId;
+            const char = CHARACTERS.find(c => c.id === charId);
+            if (!char) return;
+
+            const container = document.getElementById('inspectImageContainer');
+            if (container) {
+                container.innerHTML = `<img src="${char.img}" alt="${char.name}" class="w-full h-full object-cover rounded" onerror="this.src='https://placehold.co/150x200/2a1b18/f3e5ab?text=${encodeURIComponent(char.name)}'" />`;
+            }
+            document.getElementById('inspectName').innerText = char.name;
+            document.getElementById('inspectRole').innerText = char.title;
+            document.getElementById('inspectBio').innerText = char.bio;
+
+            const modal = document.getElementById('inspectModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeInspectModal() {
+            audioFX.playClick();
+            const modal = document.getElementById('inspectModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function selectCurrentInspected() {
+            if (inspectedCharacterId) {
+                handlePortraitClick(inspectedCharacterId);
+                closeInspectModal();
+            }
+        }
+
+        function toggleJournalModal() {
+            audioFX.playClick();
+            const modal = document.getElementById('journalModal');
+            if (modal.classList.contains('opacity-0')) {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+            } else {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        function resetPuzzle() {
+            audioFX.playClick();
+            isSolved = false;
+            selectedSequence = [];
+
+            const video = document.getElementById('vaultVideo');
+            if (video) {
+                video.pause();
+                video.currentTime = 0;
+            }
+
+            const wallLeft = document.getElementById('wallLeft');
+            if (wallLeft) wallLeft.classList.remove('open');
+
+            const msg = document.getElementById('vaultStatusMessage');
+            if (msg) msg.classList.add('opacity-0');
+
+            const btnUnlock = document.getElementById('btnUnlock');
+            if (btnUnlock) {
+                btnUnlock.disabled = false;
+                btnUnlock.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+
+            renderPortraits();
+            showToast("Puzzle reset. Solve the gallery!", "info");
+        }
+
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            const icon = document.getElementById('soundIcon');
+            const label = document.getElementById('soundLabel');
+
+            const video = document.getElementById('vaultVideo');
+            if (video) {
+                video.muted = isAudioMuted;
+            }
+
+            if (isAudioMuted) {
+                icon.className = 'fa-solid fa-volume-xmark text-rose-400';
+                label.innerText = 'Audio: Off';
+            } else {
+                icon.className = 'fa-solid fa-volume-high text-amber-400';
+                label.innerText = 'Audio: On';
+                audioFX.playClick();
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toastMessage');
+            const toastText = document.getElementById('toastText');
+            const toastIcon = document.getElementById('toastIcon');
+
+            if (!toast || !toastText || !toastIcon) return;
+
+            toastText.innerText = message;
+
+            if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-xmark text-rose-400 text-lg';
+            } else if (type === 'success') {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-info text-amber-400 text-lg';
+            }
+
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+
+            clearTimeout(window.toastTimer);
+            window.toastTimer = setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+                toast.classList.remove('opacity-100');
+            }, 3200);
+        }
+
+        window.onload = function() {
+            renderPortraits();
+        };
+    </script>
+</body>
+</html>
